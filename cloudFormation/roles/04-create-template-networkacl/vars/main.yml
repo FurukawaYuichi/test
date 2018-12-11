@@ -1,0 +1,10 @@
+---
+# Network ACL Parameters
+VPC:
+  Tagname: test-vpc01
+  Region: ap-northeast-1
+
+NetworkAcl:
+   - Name: testacl01
+     Tagname: test-acl01
+

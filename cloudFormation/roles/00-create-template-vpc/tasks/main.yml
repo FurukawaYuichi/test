@@ -1,0 +1,6 @@
+---
+# tasks file for 00-create-template-vpc
+- name: create template file for VPC
+  template:
+    src: 00-create_vpc.yml
+    dest: /tmp/00-create_vpc.yml

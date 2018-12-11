@@ -1,0 +1,24 @@
+---
+# Security Group Parameters
+VPC:
+  Tagname: test-vpc01
+  Region: ap-northeast-1
+
+SecurityGroup:
+   - Name: testsg01
+     Tagname: test-sg01
+     Description: Security Group for SSH
+     InboundRule:
+       - CidrIp: 10.10.10.0/24
+         FromPort: 22
+         ToPort: 22
+         IpProtocol: tcp
+     OutboundRule:
+       - CidrIp: 0.0.0.0/0
+         FromPort: 1024
+         ToPort: 65535
+         IpProtocol: tcp
+       - CidrIp: 0.0.0.0/0
+         FromPort: 1024
+         ToPort: 65535
+         IpProtocol: udp

@@ -1,0 +1,15 @@
+---
+# tasks file for 01-create-template-subnet
+- name: VPC parameter get
+  ec2_vpc_net_facts:
+    region: "{{ VPC.region }}"
+    filters:
+      "tag:Name": "{{ VPC.Tagname }}"
+  register: vpc_net_facts
+
+- name: create template file for subnet
+  template:
+    src: 01-create-subnet.yml
+    dest: /tmp/01-create-subnet.yml
+  failed_when:
+    - vpc_net_facts.vpcs[0].vpc_id.find('vpc-') == -1

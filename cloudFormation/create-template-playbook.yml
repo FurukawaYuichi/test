@@ -1,0 +1,12 @@
+- hosts: localhost
+  remote_user: vagrant
+  become: true
+  roles:
+    - 00-create-template-vpc
+    - 01-create-template-subnet
+    - 02-create-template-natgateway
+    - 03-create-template-routetable
+    - 04-create-template-networkacl
+    - 05-create-template-securitygroup
+    - 06-create-template-ec2
+    - 07-create-template-rds

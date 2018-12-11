@@ -1,0 +1,77 @@
+# AWS CloudFormation template:
+# FileName: 00-create_vpc.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create VPC
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for vpc in VPC %} 
+# create VPC ({{ vpc.Name }})
+  {{ vpc.Name }}VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: {{ vpc.CidrBlock }}
+      EnableDnsSupport: {{ vpc.EnableDnsSupport }}
+      EnableDnsHostnames: {{ vpc.EnableDnsHostnames }}
+      InstanceTenancy: {{ vpc.InstanceTenancy }}
+      Tags:
+        - Key: Name
+          Value: {{ vpc.Tagname }}
+
+{%   for igw in InternetGateway %}
+{%     if igw.createInternetGateway %}
+  {{ igw.Name }}InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: {{ igw.Tagname }}
+
+  {{ igw.Name }}InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref {{ igw.Name }}InternetGateway
+      VpcId: !Ref {{ vpc.Name }}VPC
+{%     endif %}
+{%   endfor %}
+{%   for vpn in VPNGateway %}
+{%     if vpn.createVPNGateway %}
+
+  {{ vpn.Name }}VPNGateway:
+    Type: AWS::EC2::VPNGateway
+    Properties:
+{%       if vpn.AmazonSideAsn %}
+      AmazonSideAsn: {{ vpn.AmazonSideAsn }}
+{%       endif %}
+      Type: {{ vpn.Type }}
+      Tags:
+        - Key: Name
+          Value: {{ vpn.Tagname }}
+
+  {{ vpn.Name }}VPNGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpnGatewayId: !Ref {{ vpn.Name }}VPNGateway
+      VpcId: !Ref {{ vpc.Tagname }}VPC
+
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for vpc in VPC %} 
+# output VPC ID ({{ vpc.Name }})
+  stackVPC:
+    Description: The ID of {{ vpc.Name }}VPC
+    Value: !Ref {{ vpc.Name }}VPC
+    Export: 
+      Name: !Sub output-{{ vpc.Name }}VPC
+{% endfor %}
+#EOF

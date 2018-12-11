@@ -1,0 +1,47 @@
+# AWS CloudFormation template:
+# FileName: 03-create_routetable.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create Route Table
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for rt in RouteTable %}
+# create RouteTable ({{ rt.Name }})
+  {{ rt.Name }}RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: {{ vpc_net_facts.vpcs[0].vpc_id }}
+      Tags:
+        - Key: Name
+          Value: {{ rt.Tagname }}
+{%   for subnet in rt.Subnets %}
+# entry subnet {{ subnet }} to RouteTable {{ rt.Name }}
+  {{ rt.Name }}SubnetRouteTableAssociation{{ loop.index }}:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref {{ rt.Name }}RouteTable
+{%     for i in range(vpc_subnet_facts|length) %}
+{%       if subnet in vpc_subnet_facts.subnets[i].tags.Name %}
+      SubnetId: {{ vpc_subnet_facts.subnets[i].subnet_id }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for rt in RouteTable %}
+# output RouteTable ID ({{ rt.Name }})
+  stackRouteTable{{ rt.Name }}:
+    Description: The ID of {{ rt.Name }}RouteTable
+    Value: !Ref {{ rt.Name }}RouteTable
+    Export:
+      Name: !Sub output-{{ rt.Name }}RouteTable
+{% endfor %}
+# EOF

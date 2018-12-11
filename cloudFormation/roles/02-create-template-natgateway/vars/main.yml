@@ -1,0 +1,11 @@
+---
+# NatGateway Parameters
+VPC:
+  Tagname: test-vpc01
+  Region: ap-northeast-1
+
+NatGateway:
+  - Name: testnatgw01
+    Tagname: test-natgw01
+    Subnet: test-subnet1a
+    Eip: 1.1.1.1

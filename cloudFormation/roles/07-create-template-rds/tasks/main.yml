@@ -1,0 +1,27 @@
+---
+# tasks file for 07-create-template-rds
+- name: Subnet Group parameter get
+  ec2_vpc_subnet_facts:
+    filters:
+      "tag:Name": "{{ item }}"
+  with_items:
+    - "{{ DBSubnetGroup.Subnetname }}"
+  register: vpc_subnet_facts
+
+- name: Security Group parameter get
+  ec2_group_facts:
+    filters:
+      "tag:Name": "{{ item.Name }}"
+  with_items:
+    - "{{ VPCSecurityGroups }}"
+  register: group_facts
+
+- name: create template file for RDS
+  template:
+    src: 07-create-template-rds.yml
+    dest: /tmp/07-create-template-rds.yml
+  with_items:
+    - "{{ vpc_subnet_facts.results }}"
+  failed_when:
+    - item.subnets[0].subnet_id.find('subnet-') == -1
+    - group_facts.results[0].security_groups[0].group_id.find('sg-') == -1

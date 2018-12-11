@@ -1,0 +1,63 @@
+---
+# RDS Parameters
+DBSubnetGroup:
+  DBSubnetGroupName: testdbsubnetgroup01
+  Tagname: test-dbsubnetgroup01
+  DBSubnetGroupDescription: descriotion
+  Subnetname:
+    - test-subnet1c
+    - test-subnet1d
+
+VPCSecurityGroups:
+  - Name: test-sg01
+
+DBParameterGroup:
+  Name: testdbparametergroup01
+  Tagname: test-dbparametergroup01
+  Description: test db parameter group01
+  Family:
+  Parameters:
+    - Key: '"max server memory (mb)"'
+      Value: '''{DBInstanceClassMemory*9/10485760}'''
+    - Key: '"max degree of parallelism"'
+      Value: 2
+
+RDS:
+  - Name: testsqlserver01
+    Tagname: test-sqlserver01
+# Required Parameters
+    AllocatedStorage: 20
+    AllowMajorVersionUpgrade: false
+    AutoMinorVersionUpgrade: false
+    BackupRetentionPeriod: 7
+    DBInstanceClass: db.m4.2xlarge
+    DBInstanceIdentifier: vpfrdsvdl
+    DBName: vpfrdsvdl
+    Engine: sqlserver-se
+    EngineVersion: 13.00.5216.0.v1
+    Iops: 2000 # If you specify io1 for the StorageType property, you must specify this property.
+    KmsKeyId: # Specify the ARN of the AWS Key Management Service master key.
+    LicenseModel: license-included
+    MasterUsername: admin
+    MasterUserPassword: password
+    MonitoringInterval: 0 # Valid Values: 0(disable), 1, 5, 10, 15, 30, 60 
+    MonitoringRoleArn: 0 # Specify the ARN of the AWS IAM role that allows Amazon RDS to send extended monitoring metrics to Amazon CloudWatch.
+# Non-mandatory Parameters
+    AvailabilityZone: 
+    CharacterSetName: # Only RDS for Oracle DB
+    CopyTagsToSnapshot: true
+    DBClusterIdentifier: # Only RDS for Aurora
+    DBParameterGroupName:
+    Domain: # Only RDS for SQL Server
+    DomainIAMRoleName: # Use AWS Directory Service API
+    MultiAZ: true
+    OptionGroupName:
+    Port: 1433
+    PreferredBackupWindow: 17:00-18:00
+    PreferredMaintenanceWindow: sun:18:00-sun:20:00
+    PubliclyAccessible: false 
+    SourceDBInstanceIdentifier:
+    SourceRegion:
+    StorageEncrypted: false
+    StorageType: io1
+    Timezone: Tokyo Standard Time

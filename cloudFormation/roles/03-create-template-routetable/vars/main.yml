@@ -1,0 +1,16 @@
+---
+# Route Table Parameters
+VPC:
+  Tagname: test-vpc01
+  Region: ap-northeast-1
+
+RouteTable:
+   - Name: testrt01
+     Tagname: test-rt01
+     Subnets:
+       - test-subnet1a
+   - Name: testrt02
+     Tagname: test-rt02
+     Subnets:
+       - test-subnet1c
+       - test-subnet1d

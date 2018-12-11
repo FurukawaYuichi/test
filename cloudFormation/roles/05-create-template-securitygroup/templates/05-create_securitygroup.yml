@@ -1,0 +1,60 @@
+# AWS CloudFormation template:
+# FileName: 05-create_securitygroup.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create Security Group
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for sg in SecurityGroup %}
+# create SecurityGroup ({{ sg.Name }})
+  {{ sg.Name }}SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: {{ vpc_net_facts.vpcs[0].vpc_id }}
+      GroupDescription: {{ sg.Description }}
+      GroupName: {{ sg.Name }}
+      Tags:
+        - Key: Name
+          Value: {{ sg.Tagname }}
+{%   for ib in sg.InboundRule %}
+  {{ sg.Name }}InboundRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: {{ ib.IpProtocol }} 
+      FromPort: {{ ib.FromPort }}
+      ToPort: {{ ib.ToPort }}
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+        - {{ sg.Name }}SecurityGroup
+        - GroupId
+{%   endfor %}
+{%   for ob in sg.OutboundRule %}
+  {{ sg.Name }}OutboundRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: {{ ob.IpProtocol }} 
+      FromPort: {{ ob.FromPort }}
+      ToPort: {{ ob.ToPort }}
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+        - {{ sg.Name }}SecurityGroup
+        - GroupId
+{%   endfor %}
+{% endfor %}
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for sg in SecurityGroup %}
+# output SecurityGroup ID ({{ sg.Name }})
+  stackSecurityGroup{{ sg.Name }}:
+    Description: The ID of {{ sg.Name }}SecurityGroup
+    Value: !Ref {{ sg.Name }}SecurityGroup
+    Export:
+      Name: !Sub output-{{ sg.Name }}SecurityGroup
+{% endfor %}
+# EOF

@@ -1,0 +1,23 @@
+---
+# tasks file for 03-create-template-routetable
+- name: VPC parameter get
+  ec2_vpc_net_facts:
+    region: "{{ VPC.Region }}"
+    filters:
+      "tag:Name": "{{ VPC.Tagname }}"
+  register: vpc_net_facts
+
+- name: subnet parameter get
+  ec2_vpc_subnet_facts:
+    region: "{{ VPC.Region }}"
+    filters:
+      vpc-id: "{{ vpc_net_facts.vpcs[0].vpc_id }}"
+  register: vpc_subnet_facts
+
+- name: create template file for Route Table
+  template:
+    src: 03-create_routetable.yml
+    dest: /tmp/03-create_routetable.yml
+  failed_when:
+    - vpc_net_facts.vpcs[0].vpc_id.find('vpc-') == -1
+    - vpc_subnet_facts.subnets[0].subnet_id.find('subnet-') == -1

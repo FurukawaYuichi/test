@@ -1,0 +1,15 @@
+---
+# tasks file for 05-create-template-securitygroup
+- name: VPC parameter get
+  ec2_vpc_net_facts:
+    region: "{{ VPC.Region }}"
+    filters:
+      "tag:Name": "{{ VPC.Tagname }}"
+  register: vpc_net_facts
+
+- name: create template file for Security Group
+  template:
+    src: 05-create_securitygroup.yml
+    dest: /tmp/05-create_securitygroup.yml
+  failed_when:
+    - vpc_net_facts.vpcs[0].vpc_id.find('vpc-') == -1

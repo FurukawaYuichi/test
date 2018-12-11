@@ -1,0 +1,144 @@
+# AWS CloudFormation template:
+# FileName: 06-create-template-ec2.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create EC2 instance (create or update stack is required "CAPABILITY_NAMED_IAM")
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for i in Instance %}
+# create Instance Profile ({{ i.IamInstanceProfile }})
+  {{ i.Name }}InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles: {{ i.IamInstanceProfile }}
+      InstanceProfileName: {{ i.IamInstanceProfile }}
+# create Instance ({{ i.Name }})
+  {{ i.Name }}Instance:
+    Type: AWS::EC2::Instance
+{%   if i.ENI.Create %}
+    DependsOn: 
+{%     for id in i.ENI.ENIDeviceIndex %}
+      - {{ i.Name }}createNetworkInterface{{ id }}
+{%     endfor %}
+{%   endif %}
+    Properties:
+      AvailabilityZone: String
+{%   if i.BlockDeviceMappings %}
+      BlockDeviceMappings: 
+{%     for bdm in i.BlockDeviceMappings %}
+        - DeviceName: {{ bdm.DeviceName }}
+          Ebs:
+{%       if bdm.Ebs.DeleteOnTermination %}
+            DeleteOnTermination: {{ bdm.Ebs.DeleteOnTermination }}
+{%       endif %}
+{%       if bdm.Ebs.Encrypted %}
+            Encrypted: {{ bdm.Ebs.Encrypted }}
+{%       endif %}
+{%       if bdm.Ebs.Iops %}
+            Iops: {{ bdm.Ebs.Iops }}
+{%       endif %}
+{%       if bdm.Ebs.VolumeSize %}
+            VolumeSize: {{ bdm.Ebs.VolumeSize }}
+{%       endif %}
+{%       if bdm.Ebs.VolumeType %}
+            VolumeType: {{ bdm.Ebs.VolumeType }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+      EbsOptimized: {{ i.EbsOptimized }}
+      IamInstanceProfile: {{ i.IamInstanceProfile }} 
+{%   if i.ImageId %}
+      ImageId: {{ i.ImageId }}
+{%   else %}
+      ImageId: {{ sorted_amis.image_id }}
+{%   endif %}
+      InstanceInitiatedShutdownBehavior: {{ i.InstanceInitiatedShutdownBehavior }}
+      InstanceType: {{ i.InstanceType }}
+      KeyName: {{ i.KeyName }}
+      Monitoring: {{ i.Monitoring }}
+{%   if i.NetworkInterfaces %}
+      NetworkInterfaces:
+{%     for ni in i.NetworkInterfaces %}
+        - AssociatePublicIpAddress: {{ ni.AssociatePublicIpAddress }}
+          DeleteOnTermination: {{ ni.DeleteOnTermination }}
+          Description: {{ ni.Description }}
+          DeviceIndex: {{ ni.DeviceIndex }}
+{%       if i.ENI.Create %}
+{%         for l in i.ENI.ENIDeviceIndex %}
+{%           if l == ni.DeviceIndex %}
+          NetworkInterfaceId: !Ref {{ i.Name }}createNetworkInterface{{ ni.DeviceIndex }}
+{%           endif %}
+{%         endfor %}
+{%       else %}
+{%         if ni.PrivateIpAddress != None %}
+          PrivateIpAddress: {{ ni.PrivateIpAddress }}
+{%         endif %}
+{%         for x in range(vpc_subnet_facts.results|length) %}
+{%           if ni.SubnetName in vpc_subnet_facts.results[x].subnets[0].tags.Name %}
+          SubnetId: {{ vpc_subnet_facts.results[x].subnets[0].subnet_id }}
+{%           endif %}
+{%         endfor %}
+{%       endif %}
+{%     endfor %}
+{%   else %}
+{%     if i.PrivateIpAddress %}
+      PrivateIpAddress: {{ i.PrivateIpAddress }}
+{%     endif %}
+{%     for x in range(vpc_subnet_facts.results|length) %}
+{%       if i.SubnetName in vpc_subnet_facts.results[x].subnets[0].tags.Name %}
+      SubnetId: {{ vpc_subnet_facts.results[x].subnets[0].subnet_id }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{%   if i.PlacementGroupName %}
+      PlacementGroupName: {{ i.PlacementGroupName }}
+{%   endif %}
+{%   for sgName in i.SecurityGroups %}
+      SecurityGroups: 
+        - {{ sgName }}
+{%   endfor %}
+      SourceDestCheck: {{ i.SourceDestCheck }}
+      Tags: 
+        - Key: Name
+          Value: {{ i.Tagname }}
+{%   if i.ENI.Create %}
+{%     if i.NetworkInterfaces %}
+{%       for x in i.ENI.ENIDeviceIndex %}
+# create NetworkInterface ({{ i.Name }})
+  {{ i.Name }}createNetworkInterface{{ x }}:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      NetworkInterface:
+{%         if i.NetworkInterfaces[x].Description %}
+          Description: {{ i.NetworkInterfaces[x].Description }}
+{%         endif %}
+{%         if i.NetworkInterfaces[x].PrivateIpAddress %}
+          PrivateIpAddress: {{ i.NetworkInterfaces[x].PrivateIpAddress }}
+{%         endif %}
+{%         for y in range(vpc_subnet_facts.results|length) %}
+{%           if i.NetworkInterfaces[x].SubnetName in vpc_subnet_facts.results[y].subnets[0].tags.Name %}
+          SubnetId: {{ vpc_subnet_facts.results[y].subnets[0].subnet_id }}
+{%           endif %}
+{%         endfor %}
+{%       endfor %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for i in Instance %}
+# output Instance ID ({{ i.Name }})
+  stackInstance{{ i.Name }}:
+    Description: The ID of {{ i.Name }}Instance
+    Value: !Ref {{ i.Name }}Instance
+    Export:
+      Name: !Sub output-{{ i.Name }}Instance
+{% endfor %}
+# EOF

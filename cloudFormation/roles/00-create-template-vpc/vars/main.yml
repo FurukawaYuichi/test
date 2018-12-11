@@ -1,0 +1,22 @@
+---
+# VPC Parameters
+VPC:
+  - Name: testvpc01
+    Tagname: test-vpc01
+    CidrBlock: 
+    EnableDnsSupport: true
+    EnableDnsHostnames: true
+    InstanceTenancy: default
+
+InternetGateway:
+  - createInternetGateway: true
+    Name: testigw
+    Tagname: test-igw
+
+VPNGateway:
+  - createVPNGateway: true
+    Name: testvgw
+    Tagname: test-vgw
+    AmazonSideAsn: 
+    Type: ipsec.1
+

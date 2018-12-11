@@ -1,0 +1,34 @@
+# AWS CloudFormation template:
+# FileName: 04-create_networkacl.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create Network ACL
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for acl in NetworkAcl %}
+# create Network ACL ({{ acl.Name }})
+  {{ acl.Name }}NetworkACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: {{ vpc_net_facts.vpcs[0].vpc_id }}
+      Tags:
+        - Key: Name
+          Value: {{ acl.Tagname }}
+{% endfor %}
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for acl in NetworkAcl %}
+# output Network ACL ID ({{ acl.Name }})
+  stackSubnet{{ acl.Name }}:
+    Description: The ID of {{ acl.Name }}NetworkACL
+    Value: !Ref {{ acl.Name }}NetworkACL
+    Export:
+      Name: !Sub output-{{ acl.Name }}NetworkACL
+{% endfor %}
+# EOF

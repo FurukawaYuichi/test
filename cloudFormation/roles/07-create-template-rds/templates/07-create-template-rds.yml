@@ -1,0 +1,150 @@
+# AWS CloudFormation template:
+# FileName: 07-create-template-rds.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create RDS
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+# create DBSubnetGroup ({{ DBSubnetGroup.DBSubnetGroupName }})
+  {{ DBSubnetGroup.DBSubnetGroupName }}DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: {{ DBSubnetGroup.DBSubnetGroupDescription }}
+      DBSubnetGroupName: {{ DBSubnetGroup.DBSubnetGroupName }}
+      SubnetIds:
+{% for objects in vpc_subnet_facts.results %}
+        - {{ objects.subnets[0].subnet_id }}
+{% endfor %}
+      Tags:
+        - Key: Name
+          Value: {{ DBSubnetGroup.Tagname }} 
+{% for rds in RDS %}
+# create DBParameterGroup ({{ DBParameterGroup.Name }})
+  {{ DBParameterGroup.Name }}DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: {{ DBParameterGroup.Name }}
+{%   if DBParameterGroup.Family != None %}
+      Family: {{ DBParameterGroup.Family }}
+{%   elif (rds.Engine == "postgres") and (rds.EngineVersion | regex_replace('^(\\d*).*','\\1') == "10") %}
+      Family: {{ rds.Engine }}{{ rds.EngineVersion | regex_replace('^(\\d*)\.(\d).*','\\1') }}
+{%   elif ("sqlserver" in rds.Engine) or ("oracle" in rds.Engine) %}
+      Family: {{ rds.Engine }}-{{ rds.EngineVersion | regex_replace('^(\\d*)\.(\d).*','\\1.\\2') }}
+{%   else %}
+      Family: {{ rds.Engine }}{{ rds.EngineVersion | regex_replace('^(\\d*)\.(\d).*','\\1.\\2') }}
+{%   endif %}
+{%   if DBParameterGroup.Parameters != None %}
+      Parameters:
+{%     for params in DBParameterGroup.Parameters %}
+        - Key: {{ params.Key }}
+          Value: {{ params.Value }}
+{%     endfor %}
+{%   endif %}
+      Tags:
+        - Key: Name
+          Value: {{ DBParameterGroup.Tagname }}
+# create RDS ({{ rds.Name }})
+  {{ rds.Name }}DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: {{ rds.AllocatedStorage }}
+      AllowMajorVersionUpgrade: {{ rds.AllowMajorVersionUpgrade }}
+      AutoMinorVersionUpgrade: {{ rds.AutoMinorVersionUpgrade }}
+{%   if rds.AvailabilityZone != None %}
+      AvailabilityZone: {{ rds.AvailabilityZone }}
+{%   endif %}
+      BackupRetentionPeriod: {{ rds.BackupRetentionPeriod }}
+{%   if rds.CharacterSetName != None %}
+      CharacterSetName: {{ rds.CharacterSetName }}
+{%   endif %}
+{%   if rds.CopyTagsToSnapshot != None %}
+      CopyTagsToSnapshot: {{ rds.CopyTagsToSnapshot }}
+{%   endif %}
+{%   if "aurora" in rds.Engine %}
+      DBClusterIdentifier: {{ rds.DBClusterIdentifier }}
+{%   endif %}
+      DBInstanceClass: {{ rds.DBInstanceClass }}
+{%   if rds.DBInstanceIdentifier != None %}
+      DBInstanceIdentifier: {{ rds.DBInstanceIdentifier }}
+{%   else %}
+      DBName: {{ rds.DBName }}
+{%   endif %}
+{%   if rds.DBParameterGroupName != None %}
+      DBParameterGroupName: {{ rds.DBParameterGroupName }}
+{%   else %}
+      DBParameterGroupName: {{ DBParameterGroup.Name }}
+{%   endif %}
+      DBSubnetGroupName: {{ DBSubnetGroup.DBSubnetGroupName }}
+{%   if rds.Domain != None %}
+      Domain: {{ rds.Domain }}
+{%   endif %}
+{%   if rds.DomainIAMRoleName != None %}
+      DomainIAMRoleName: String
+{%   endif %}
+      Engine: {{ rds.Engine }}
+      EngineVersion: {{ rds.EngineVersion }}
+{%   if rds.Iops != None %}
+      Iops: {{ rds.Iops }}
+{%   endif %}
+{%   if (rds.KmsKeyId != None) and (rds.StorageEncrypted | bool == 'True' ) %}
+      KmsKeyId: String
+{%   endif %}
+      LicenseModel: {{ rds.LicenseModel }}
+      MasterUsername: {{ rds.MasterUsername }}
+      MasterUserPassword: {{ rds.MasterUserPassword }}
+      MonitoringInterval: {{ rds.MonitoringInterval }}
+{%   if rds.MonitoringInterval != "0" %}
+      MonitoringRoleArn: {{ rds.MonitoringRoleArn }}
+{%   endif %}
+{%   if rds.MultiAZ != None %}
+      MultiAZ: {{ rds.MultiAZ }}
+{%   endif %}
+{%   if rds.OptionGroupName != None %}
+      OptionGroupName: {{ rds.OptionGroupName }}
+{%   endif %}
+{%   if rds.Port != None %}
+      Port: {{ rds.Port }}
+{%   endif %}
+{%   if rds.PreferredBackupWindow != None %}
+      PreferredBackupWindow: {{ rds.PreferredBackupWindow }}
+{%   endif %}
+{%   if rds.PreferredMaintenanceWindow != None %}
+      PreferredMaintenanceWindow: {{ rds.PreferredMaintenanceWindow }}
+{%   endif %}
+{%   if rds.PubliclyAccessible | bool == 'True' %}
+      PubliclyAccessible: {{ rds.PubliclyAccessible }}
+{%   endif %}
+{%   if (rds.SourceDBInstanceIdentifier != None) and (rds.SourceRegion != None) %}
+      SourceDBInstanceIdentifier: {{ rds.SourceDBInstanceIdentifier }}
+      SourceRegion: {{ rds.SourceRegion }}
+{%   endif %}
+{%   if rds.StorageEncrypted | bool == 'True' %}
+      StorageEncrypted: {{ rds.StorageEncrypted }}
+{%   endif %}
+{%   if rds.StorageType != None %}
+      StorageType: {{ rds.StorageType }}
+{%   endif %}
+      Tags:
+        - Key: Name
+          Value: {{ rds.Tagname }}
+{%   if rds.Timezone != None %}
+      Timezone: {{ rds.Timezone }}
+{%   endif %}
+      VPCSecurityGroups: {{ group_facts.results[0].security_groups[0].group_id }}
+{% endfor %}
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for rds in RDS %}
+# output RDS ID ({{ rds.Name }})
+  stackDBInstance{{ rds.Name }}:
+    Description: The ID of {{ rds.Name }}DBInstance
+    Value: !Ref {{ rds.Name }}DBInstance
+    Export:
+      Name: !Sub output-{{ rds.Name }}DBInstance
+{% endfor %}
+# EOF

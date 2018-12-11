@@ -1,0 +1,44 @@
+# AWS CloudFormation template:
+# FileName: 02-create_natgateway.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create NAT Gateway
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for nat in NatGateway %}
+# create NAT Gateway ({{ nat.Name }})
+  {{ nat.Name }}NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+{%   for i in range(eip_facts|length) %}
+{%     if nat.Eip in eip_facts.addresses[i].public_ip %}
+      AllocationId: {{ eip_facts.addresses[i].allocation_id }}
+{%     endif %}
+{%   endfor %}
+{%   for j in range(vpc_subnet_facts|length) %}
+{%     if nat.Subnet in vpc_subnet_facts.subnets[j].tags.Name %}
+      SubnetId: {{ vpc_subnet_facts.subnets[j].id }}
+{%     endif %}
+{%   endfor %}
+      Tags:
+        - Key: Name
+          Value: {{ nat.Tagname }}
+{% endfor %}
+
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for nat in NatGateway %}
+# output NAT Gateway ID ({{ nat.Name }})
+  stackNatGateway{{ nat.Name }}:
+    Description: The ID of {{ nat.Name }}NatGateway
+    Value: !Ref {{ nat.Name }}NatGateway
+    Export:
+      Name: !Sub output-{{ nat.Name }}NatGateway
+{% endfor %}
+# EOF

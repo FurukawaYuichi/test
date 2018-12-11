@@ -1,0 +1,42 @@
+---
+# tasks file for 06-create-template-ec2
+- name: Search OS AMI ID
+  ec2_ami_facts:
+    filters:
+      name: "{{ item.Name }}"
+    region: "{{ item.Region }}"
+    owners: "{{ item.Owners }}"
+  with_items:
+    - "{{ OS }}"
+  register: ami_facts
+
+- name: sort creation date for AMI ID
+  set_fact:
+    sorted_amis: "{{ ami_facts.results[0].images | sort(attribute='creation_date') | last }}"
+
+- name: create Subnets List
+  ec2_vpc_subnet_facts:
+    filters:
+      "tag:Name": "{{ item.1.SubnetName }}"
+  with_subelements:
+    - "{{ Instance }}"
+    - NetworkInterfaces
+  register: vpc_subnet_facts
+
+- name: create Security Group List
+  ec2_group_facts:
+    filters:
+      group-name: "{{ item.1 }}"
+  with_subelements:
+    - "{{ Instance }}"
+    - SecurityGroups
+  register: group_facts
+
+- name: create template file for Instance
+  template:
+    src: 06-create-template-ec2.yml
+    dest: /tmp/06-create-template-ec2.yml
+  failed_when:
+    - item.subnets[0].subnet_id.find('subnet-') == -1
+  with_items:
+    - "{{ vpc_subnet_facts.results }}"

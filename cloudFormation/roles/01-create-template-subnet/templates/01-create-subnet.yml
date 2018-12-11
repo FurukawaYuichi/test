@@ -1,0 +1,40 @@
+# AWS CloudFormation template:
+# FileName: 01-create_subnet.yml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+    Create subnet
+
+#======================================================================
+# Resources
+#======================================================================
+Resources:
+{% for subnet in  Subnets %} 
+# create subnet ({{ subnet.Name }})
+  {{ subnet.Name }}Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: {{ vpc_net_facts.vpcs[0].vpc_id }}
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: {{ subnet.AvailabilityZone }}
+      CidrBlock: {{ subnet.CidrBlock }}
+      MapPublicIpOnLaunch: {{ subnet.MapPublicIpOnLaunch }}
+      Tags:
+        - Key: Name
+          Value: {{ subnet.Tagname }}
+{% endfor %}
+
+#======================================================================
+# Outputs
+#======================================================================
+Outputs:
+{% for subnet in  Subnets %} 
+# output subnet ID ({{ subnet.Name }})
+  stackSubnet{{ subnet.Name }}:
+    Description: The ID of {{ subnet.Name }}Subnet
+    Value: !Ref {{ subnet.Name }}Subnet
+    Export:
+      Name: !Sub output-{{ subnet.Name }}Subnet
+{% endfor %}
+#EOF
